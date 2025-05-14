@@ -332,18 +332,23 @@ def PlotCV(voltammagrams,dataset, showTitle=True,showAverage=True, mode = PlotMo
         xKey = 'Time (s)'
         yKey = 'Current (A)'
         eachPotential = True
+        scaleV,prefixV = 1, ''
     elif mode == PlotMode.ByEachPotential:
         xKey = 'Potential (V)'
         yKey = 'Current (A)'
         eachPotential = True
+        electrodes = list(voltammagram['parts'].keys())
+        scaleV,prefixV = SetPrefix(   voltammagram['parts'][electrodes[0]]['data'][xKey])
     elif mode == PlotMode.ByE1Potential:
         dataKey = 'E1'
         xKey = 'Potential (V)'
         yKey = 'Current (A)'
+        scaleV,prefixV = SetPrefix( voltammagram['parts'][dataKey]['data'][xKey])
     elif mode == PlotMode.ByE2Potential:
         dataKey = 'E2'
         xKey = 'Potential (V)'
         yKey = 'Current (A)'
+        scaleV,prefixV = SetPrefix(  voltammagram['parts'][dataKey]['data'][xKey])
         
     plt.figure(figsize=figsize)        
     
@@ -354,6 +359,7 @@ def PlotCV(voltammagrams,dataset, showTitle=True,showAverage=True, mode = PlotMo
         yAll.extend(y)
         
     scale, prefix = SetPrefix( yAll)
+    
     del yAll
     cc=0
     for key in voltammagram ['parts']:
@@ -368,18 +374,27 @@ def PlotCV(voltammagrams,dataset, showTitle=True,showAverage=True, mode = PlotMo
                 offset = voltammagram['offset_V']
             else:
                 offset = 0
-            plt.scatter(x,data[yKey]*scale, s=0.5, alpha =.2)
-            plt.plot(potential2-offset,smooth_current*scale, label=f'{key} average')
+            plt.scatter(x*scaleV,data[yKey]*scale, s=0.5, alpha =.2)
+            plt.plot((potential2-offset)*scaleV,smooth_current*scale, label=f'{key} average')
         else :
             data = voltammagram['parts'][key]['data']
             if eachPotential==False:
                 x = voltammagram['parts'][dataKey]['data'][xKey]
             else:
                 x= data[xKey]
-            plt.plot(x,data[yKey]*scale, label=key)
+            plt.plot(x*scaleV,data[yKey]*scale, label=key)
         cc+=1
     
-    plt.xlabel(xKey)
+    
+    if mode == PlotMode.ByTime:
+        plt.xlabel(f'Time ({prefixV}s)')
+    elif mode == PlotMode.ByEachPotential:
+        plt.xlabel(f'Potential ({prefixV}V)')
+    elif mode == PlotMode.ByE1Potential:
+        plt.xlabel(f'E1 Potential ({prefixV}V)')
+    elif mode == PlotMode.ByE2Potential:
+        plt.xlabel(f'E2 Potential ({prefixV}V)')
+    
     plt.ylabel(f'Current ({prefix}A)')
     
     
@@ -555,7 +570,7 @@ def fit_multiple_gaussians_rising(rising_segment, raw_elect, peak_locations, fal
     y_10 = np.log(y_corr[:10]*-1)
     exp_fit = np.polyfit(x_10, y_10, 1)
     a0 =-1* np.exp(exp_fit[1])/8
-    b0 = exp_fit[0]*0.5
+    b0 =-1* exp_fit[0]*0.5
     
     # Initial parameters
     popt = [a0, b0, slope, intercept]
@@ -591,12 +606,12 @@ def fit_multiple_gaussians_rising(rising_segment, raw_elect, peak_locations, fal
     except RuntimeError as e:
         print(f"Error during curve fitting: {e}")
         return popt, np.zeros_like(popt)
-def plot_gaussian_fits(segment, params, direction, title=None):
+def plot_gaussian_fits(segment, params, direction, title=None,figsize=(6, 4)):
     """Plot the data with the fitted Gaussians"""
     x = segment['potential']
     y = segment['current']*direction
     
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=figsize)
     plt.scatter(x, y, label='Data', alpha=0.5, s=10)
     
     # Plot the overall fit
@@ -645,7 +660,7 @@ def plot_gaussian_fits(segment, params, direction, title=None):
 
 def plot_combined_fits_with_table(voltammagrams,key,falling_segment, rising_segment, 
                                     params_falling, params_rising, 
-                                      title=None):
+                                      title=None,figsize=(6, 4)):
     """
     Plot the falling and rising segments, their fits, and Gaussian components.
     Include a table showing peak information.
@@ -665,7 +680,7 @@ def plot_combined_fits_with_table(voltammagrams,key,falling_segment, rising_segm
         Plot title
     """
     # Create figure with two subplots (main plot and Gaussian components)
-    fig = plt.figure(figsize=(12, 10))
+    fig = plt.figure(figsize=figsize)
     gs = fig.add_gridspec(3, 1, height_ratios=[3, 1, 1])
     ax1 = fig.add_subplot(gs[0])  # Main plot
     ax2 = fig.add_subplot(gs[1])  # Gaussian components
@@ -706,7 +721,7 @@ def plot_combined_fits_with_table(voltammagrams,key,falling_segment, rising_segm
     ax1.set_ylabel(f'Current ({prefix}A)')
     if title:
         ax1.set_title(title)
-    ax1.legend(loc='upper right')
+    ax1.legend( )
     ax1.grid(True, alpha=0.3)
     
     # Create x range for Gaussian components
@@ -863,7 +878,7 @@ def plot_combined_fits_with_table(voltammagrams,key,falling_segment, rising_segm
     
     return peak_info_falling, peak_info_rising
 
-def analyze_voltammogram_with_combined_plots(voltammagrams, key, raw_elect, peak_locations_falling,peak_locations_rising,  electrode='E1'):
+def analyze_voltammogram_with_combined_plots(voltammagrams, key, raw_elect, peak_locations_falling,peak_locations_rising,  electrode='E1',figsize=(6, 4)):
     """
     Analyze a voltammogram by fitting multiple Gaussians to both falling and rising segments
     and showing a combined visualization
@@ -897,7 +912,7 @@ def analyze_voltammogram_with_combined_plots(voltammagrams, key, raw_elect, peak
         voltammagrams,key,
         falling_segment, rising_segment, 
         params_falling, params_rising,  
-        title=f"Gaussian Fits for {key}, {electrode} - Falling and Rising Segments"
+        title=f"Gaussian Fits for {key}, {electrode} - Falling and Rising Segments",figsize=figsize
     )
     
     return params_falling, params_rising, peak_info_falling, peak_info_rising
