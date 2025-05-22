@@ -250,8 +250,6 @@ def DetermineElectrical(voltammagrams, key, electrode ='E1' , plot=False):
     capacitance_gap = np.abs(risingValueAtZero - fallingValueAtZero) / voltammagram['speed_Vs'] #F
     return leakage, capacitance,capacitance_gap,  {'slope': most_common_slope, 'intercept_rising': intercepts_rising, 'intercept_falling': intercepts_falling}
 
-
-
 class PlotMode(Enum):
     ByTime = "Time"
     ByEachPotential = "Each Potential"
@@ -281,9 +279,6 @@ def SetPrefix(y):
         scale = 1
         prefix = ''    
     return scale, prefix
-
-
-
 
 def AverageCycles( part):
     times =np.array( part ['data']['Time (s)'])
@@ -319,7 +314,6 @@ def AverageCycles( part):
     smooth_current =np.concatenate((smooth_current, [smooth_current[0]]))
     return times, potential2,  smooth_current
     
-
 def PlotCV(voltammagrams,dataset, showTitle=True,showAverage=True, mode = PlotMode.ByE1Potential,  figsize=(6, 4)):
     voltammagram = voltammagrams[dataset]
     if len(voltammagram['parts'].keys())==2:
@@ -409,13 +403,9 @@ def PlotCV(voltammagrams,dataset, showTitle=True,showAverage=True, mode = PlotMo
         plt.legend()
     plt.show()
     
-
-
 def gaussian(x, amp, cen, wid):
     """Gaussian function"""
     return amp * np.exp(-(x - cen)**2 / (2 * wid**2))
-
- 
 
 def multi_gaussian_with_exp(x, *params):
     """Multiple Gaussians with exponential background"""
